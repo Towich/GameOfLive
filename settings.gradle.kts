@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CanvasStudy"
+rootProject.name = "GameOfLive"
 include(":app")

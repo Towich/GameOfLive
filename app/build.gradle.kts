@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.canvasstudy"
+    namespace = "com.example.gameoflive"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.canvasstudy"
+        applicationId = "com.example.gameoflive"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
