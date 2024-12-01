@@ -13,10 +13,24 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun CellComposable(cell: Cell, onClick: () -> Unit) {
+    val cellBackground = if(cell.alive == 1) {
+        when (cell.type) {
+            CellType.JEDI -> {
+                Color.Blue
+            }
+
+            CellType.DROID -> {
+                Color.Gray
+            }
+        }
+    } else {
+        Color.White
+    }
+
     Box(
         modifier = Modifier
-            .size(8.dp)
-            .background(if (cell.aliveTimes > 5) Color.Green else if (cell.alive == 1) Color.Black else Color.White)
+            .size(16.dp)
+            .background(cellBackground)
             .border(width = 0.1.dp, color = Color.LightGray)
             .clickable { onClick() },
         contentAlignment = Alignment.Center

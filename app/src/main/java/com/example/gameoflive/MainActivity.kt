@@ -4,10 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -43,8 +45,8 @@ class MainActivity : ComponentActivity() {
                     contentAlignment = Alignment.Center
                 ) {
                     Game(
-                        m = 120,
-                        n = 55,
+                        m = 50,
+                        n = 20,
                         gameActive = gameActive,
                         onChangeUpdater = { cells ->
                             if (updater != null) {
@@ -72,7 +74,32 @@ fun Game(
 ) {
     val cellState = remember {
         List(m) {
-            List(n) { mutableStateOf(Cell(0, 0, if (Random.nextInt(1, 100) < 95) 0 else 1, 0, 0)) }
+            List(n) {
+                mutableStateOf(
+                    Cell(
+                        x = 0,
+                        y = 0,
+                        type = if (Random.nextInt(1, 100) < 50) CellType.JEDI else CellType.DROID,
+                        alive = if (Random.nextInt(1, 100) < 95) 0 else 1,
+                        neighbors = 0,
+                        aliveTimes = 0
+                    )
+                )
+            }
+        }
+    }
+
+    var jedisAlive = 0
+    var droidsAlive = 0
+
+    for(row in cellState) {
+        for(cell in row) {
+            if(cell.value.alive == 1) {
+                when(cell.value.type) {
+                    CellType.JEDI -> jedisAlive++
+                    CellType.DROID -> droidsAlive++
+                }
+            }
         }
     }
 
@@ -92,14 +119,23 @@ fun Game(
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        Button(
-            onClick = { onChangeUpdater(cellState) },
+        Row(
             modifier = Modifier
-                .padding(bottom = 20.dp)
-                .width(82.dp)
-                .height(41.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 30.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = if (!gameActive) "START" else "STOP", fontSize = 10.sp)
+            Text(text = "Jedis: $jedisAlive")
+            Button(
+                onClick = { onChangeUpdater(cellState) },
+                modifier = Modifier
+                    .padding(bottom = 20.dp)
+                    .width(82.dp)
+                    .height(41.dp)
+            ) {
+                Text(text = if (!gameActive) "START" else "STOP", fontSize = 10.sp)
+            }
+            Text(text = "Droids: $droidsAlive")
         }
     }
 }
