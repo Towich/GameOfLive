@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gameoflive.ui.theme.GameOfLiveTheme
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     private var updater: Thread? = null
@@ -70,7 +71,8 @@ data class Cell(
     val x: Int,
     val y: Int,
     val alive: Int,
-    val neighbors: Int
+    val neighbors: Int,
+    val aliveTimes: Int
 )
 
 @Composable
@@ -80,7 +82,7 @@ fun Game(gameActive: Boolean, onChangeUpdater: (thread: Thread) -> Unit) {
 
     val cellState = remember {
         List(m) {
-            List(n) { mutableStateOf(Cell(0, 0, 0, 0)) }
+            List(n) { mutableStateOf(Cell(0, 0, if (Random.nextInt(1, 100) < 95) 0 else 1, 0, 0)) }
         }
     }
 
@@ -107,7 +109,7 @@ fun Game(gameActive: Boolean, onChangeUpdater: (thread: Thread) -> Unit) {
                 .width(82.dp)
                 .height(41.dp)
         ) {
-            Text(text = if(!gameActive) "START" else "STOP", fontSize = 10.sp)
+            Text(text = if (!gameActive) "START" else "STOP", fontSize = 10.sp)
         }
     }
 }
@@ -117,7 +119,7 @@ fun CellComposable(cell: Cell, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(8.dp)
-            .background(if (cell.alive == 1) Color.Green else Color.White)
+            .background(if (cell.aliveTimes > 5) Color.Green else if (cell.alive == 1) Color.Black else Color.White)
             .border(width = 0.1.dp, color = Color.LightGray)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
@@ -147,25 +149,16 @@ fun gameUpdater(
                 for (nx in -1..1) {
                     for (ny in -1..1) {
                         if (nx == 0 && ny == 0) {
-                            if (x == 2 && y == 1) {
-                                println("nx == 0 && ny == 0")
-                            }
                             continue
                         }
 
                         if (nx + x < 0 || nx + x > copyCells.size - 1
                             || ny + y < 0 || ny + y > copyCells[y].size - 1
                         ) {
-                            if (x == 2 && y == 1) {
-                                println("bounds")
-                            }
                             continue
                         }
 
                         if (copyCells[nx + x][ny + y].alive == 1) {
-                            if (x == 2 && y == 1) {
-                                println("aliveNeighbors++: ${nx + x} ${ny + y}")
-                            }
                             aliveNeighbors++
                         }
                     }
@@ -177,11 +170,14 @@ fun gameUpdater(
 
                 if (copyCells[x][y].alive == 1) {
                     if (aliveNeighbors != 2 && aliveNeighbors != 3) {
-                        cells[x][y].value = copyCells[x][y].copy(alive = 0)
+                        cells[x][y].value = copyCells[x][y].copy(alive = 0, aliveTimes = 0)
+                    } else {
+                        cells[x][y].value =
+                            copyCells[x][y].copy(aliveTimes = cells[x][y].value.aliveTimes + 1)
                     }
                 } else if (copyCells[x][y].alive == 0) {
                     if (aliveNeighbors == 3) {
-                        cells[x][y].value = copyCells[x][y].copy(alive = 1)
+                        cells[x][y].value = copyCells[x][y].copy(alive = 1, aliveTimes = 1)
                     }
                 }
 
