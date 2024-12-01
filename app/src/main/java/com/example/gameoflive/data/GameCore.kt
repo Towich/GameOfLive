@@ -1,8 +1,10 @@
-package com.example.gameoflive
+package com.example.gameoflive.data
 
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.MutableState
+import com.example.gameoflive.data.conwoy.GameOfLiveConwoy
+import com.example.gameoflive.data.starwars.StarWars
 
 class GameCore {
 
@@ -18,7 +20,7 @@ class GameCore {
             override fun run() {
                 while (!isInterrupted) {
                     try {
-                        sleep(250)
+                        sleep(UPDATE_MILLISECONDS)
                         val handler = Handler(Looper.getMainLooper())
                         handler.post(runnable)
                         println("SUP")
@@ -44,8 +46,12 @@ class GameCore {
                 copyCells.add(newRow)
             }
 
-//            gameOfLiveConwoy.processGameOfLiveIteration(cells = cells, copyCells = copyCells)
-            starWars.processStarWarsIteration(cells = cells, copyCells = copyCells)
+            gameOfLiveConwoy.processGameOfLiveIteration(cells = cells, copyCells = copyCells)
+//            starWars.processStarWarsIteration(cells = cells, copyCells = copyCells)
         }
+    }
+
+    companion object {
+        private const val UPDATE_MILLISECONDS = 25L
     }
 }

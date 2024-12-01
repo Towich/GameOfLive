@@ -1,4 +1,4 @@
-package com.example.gameoflive
+package com.example.gameoflive.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.gameoflive.data.Cell
+import com.example.gameoflive.data.CellType
+import com.example.gameoflive.data.GameCore
 import com.example.gameoflive.ui.theme.GameOfLiveTheme
 import kotlin.random.Random
 
@@ -45,8 +48,8 @@ class MainActivity : ComponentActivity() {
                     contentAlignment = Alignment.Center
                 ) {
                     Game(
-                        m = 50,
-                        n = 20,
+                        m = 120,
+                        n = 55,
                         gameActive = gameActive,
                         onChangeUpdater = { cells ->
                             if (updater != null) {
@@ -80,7 +83,7 @@ fun Game(
                         x = 0,
                         y = 0,
                         type = if (Random.nextInt(1, 100) < 50) CellType.JEDI else CellType.DROID,
-                        alive = if (Random.nextInt(1, 100) < 95) 0 else 1,
+                        alive = if (Random.nextInt(1, 100) < 80) 0 else 1,
                         neighbors = 0,
                         aliveTimes = 0
                     )
@@ -92,15 +95,21 @@ fun Game(
     var jedisAlive = 0
     var droidsAlive = 0
 
+    var x = 0
     for(row in cellState) {
+        var y = 0
         for(cell in row) {
+            cell.value = cell.value.copy(x = x, y = y)
             if(cell.value.alive == 1) {
                 when(cell.value.type) {
                     CellType.JEDI -> jedisAlive++
                     CellType.DROID -> droidsAlive++
+                    CellType.BULLET -> {}
                 }
             }
+            y++
         }
+        x++
     }
 
     Column {

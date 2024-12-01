@@ -1,4 +1,4 @@
-package com.example.gameoflive
+package com.example.gameoflive.data
 
 object CoreLogic {
 

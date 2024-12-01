@@ -1,6 +1,8 @@
-package com.example.gameoflive
+package com.example.gameoflive.data.conwoy
 
 import androidx.compose.runtime.MutableState
+import com.example.gameoflive.data.Cell
+import com.example.gameoflive.data.CoreLogic
 
 class GameOfLiveConwoy {
 
