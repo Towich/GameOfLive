@@ -17,7 +17,6 @@ class StarWars {
             for (y in 0..<cells[x].size) {
                 val cell = cells[x][y].value
                 if (cell.type == CellType.BULLET) {
-//                    println("BULLET! ${cell.direction}, x=${cell.x}, y=${cell.y}, cell=$cell")
                     when (cell.direction) {
                         CellDirection.UP -> {
                             if (x - 1 < 0) {
@@ -65,7 +64,7 @@ class StarWars {
                     }
                 } else if (cell.alive == 1) {
                     val neighbors = CoreLogic.getNeighbors(
-                        cells = copyCells,
+                        cells = cells,
                         x = x,
                         y = y,
                         onlyFree = false
@@ -144,7 +143,6 @@ class StarWars {
     }
 
     companion object {
-
         private const val SPAWN_BUTTON_CHANCE = 5
         private const val IS_STAYING_CHANCE = 70
     }

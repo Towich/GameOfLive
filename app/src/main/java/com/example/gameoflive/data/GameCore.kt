@@ -14,7 +14,6 @@ class GameCore {
     fun createGameUpdaterThread(
         cells: List<List<MutableState<Cell>>>
     ): Thread {
-
         val runnable = createGameUpdateRunnable(cells = cells)
         val t = object : Thread() {
             override fun run() {
@@ -46,12 +45,12 @@ class GameCore {
                 copyCells.add(newRow)
             }
 
-            gameOfLiveConwoy.processGameOfLiveIteration(cells = cells, copyCells = copyCells)
-//            starWars.processStarWarsIteration(cells = cells, copyCells = copyCells)
+//            gameOfLiveConwoy.processGameOfLiveIteration(cells = cells, copyCells = copyCells)
+            starWars.processStarWarsIteration(cells = cells, copyCells = copyCells)
         }
     }
 
     companion object {
-        private const val UPDATE_MILLISECONDS = 25L
+        private const val UPDATE_MILLISECONDS = 250L
     }
 }

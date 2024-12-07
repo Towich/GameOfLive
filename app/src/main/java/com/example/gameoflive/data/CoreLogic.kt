@@ -1,5 +1,7 @@
 package com.example.gameoflive.data
 
+import androidx.compose.runtime.MutableState
+
 object CoreLogic {
 
     fun countAliveNeighbors(cells: MutableList<MutableList<Cell>>, x: Int, y: Int): Int {
@@ -27,7 +29,7 @@ object CoreLogic {
     }
 
     fun getNeighbors(
-        cells: MutableList<MutableList<Cell>>,
+        cells: List<List<MutableState<Cell>>>,
         x: Int,
         y: Int,
         onlyFree: Boolean
@@ -47,7 +49,7 @@ object CoreLogic {
                 }
 
                 if(onlyFree) {
-                    if (cells[nx + x][ny + y].alive == 0) {
+                    if (cells[nx + x][ny + y].value.alive == 0) {
                         list.add(Pair(nx + x, ny + y))
                     }
                 } else {
