@@ -42,6 +42,9 @@ import com.example.gameoflive.model.Sex
 import com.example.gameoflive.model.Simulation
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.safeDrawing
 
 @Composable
 fun GameScreen() {
@@ -69,7 +72,12 @@ fun GameScreen() {
         }
     }
 
-    Column(Modifier.padding(16.dp)) {
+    // Учтём системные бары (status/navigation bar), чтобы контент не перекрывался
+    Column(
+        Modifier
+            .padding(WindowInsets.safeDrawing.asPaddingValues())
+            .padding(16.dp)
+    ) {
         ControlPanel(
             onAddOrganism = {
                 val pos =
@@ -77,6 +85,12 @@ fun GameScreen() {
                 if (simulation.isCellFree(pos)) {
                     simulation.spawnOrganism(GameConfig.randomGenome(), pos)
                 }
+            },
+            onFastForward = {
+                repeat(100) {
+                    simulation.tick()
+                }
+                tickTrigger.value = simulation.tickCounter
             }
         )
         Spacer(modifier = Modifier.padding(8.dp))
@@ -122,9 +136,10 @@ fun GameScreen() {
 }
 
 @Composable
-private fun ControlPanel(onAddOrganism: () -> Unit) {
+private fun ControlPanel(onAddOrganism: () -> Unit, onFastForward: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = onAddOrganism) { Text("Добавить организм") }
+        Button(onClick = onFastForward) { Text("+100 тиков") }
     }
 }
 
