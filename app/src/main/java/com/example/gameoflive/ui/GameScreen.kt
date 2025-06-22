@@ -22,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
@@ -30,17 +29,16 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,94 +47,115 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gameoflive.GameConfig
-import com.example.gameoflive.GameConfig.FAST_FORWARD_TICKS
-import com.example.gameoflive.GameConfig.SPAWN_ORGANISH_COUNT
+import com.example.gameoflive.data.local.LocalSimulationDataSourceImpl
+import com.example.gameoflive.data.remote.RemoteSimulationDataSourceStub
+import com.example.gameoflive.data.repository.SimulationRepositoryImpl
 import com.example.gameoflive.model.Organism
 import com.example.gameoflive.model.Position
 import com.example.gameoflive.model.Sex
 import com.example.gameoflive.model.Simulation
-import kotlinx.coroutines.delay
-import kotlin.random.Random
+import com.example.gameoflive.presentation.game.GameEffect
+import com.example.gameoflive.presentation.game.GameIntent
+import com.example.gameoflive.presentation.game.GameState
+import com.example.gameoflive.presentation.game.GameViewModel
 import androidx.activity.compose.BackHandler
-import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @Composable
 fun GameScreen(
     initialSimulation: Simulation? = null,
     onBackToMenu: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    
+    // Создаём зависимости для ViewModel
+    val localDataSource = remember { LocalSimulationDataSourceImpl(context) }
+    val remoteDataSource = remember { RemoteSimulationDataSourceStub() }
+    val repository = remember { SimulationRepositoryImpl(localDataSource, remoteDataSource) }
+    
+    // Создаём симуляцию с первым организмом, если нужно
     val simulation = remember {
         initialSimulation ?: Simulation(
             width = GameConfig.FIELD_WIDTH,
             height = GameConfig.FIELD_HEIGHT
-        )
-    }
-
-    val tickTrigger = remember { mutableStateOf(0L) }
-    val selectedOrganism: MutableState<Organism?> = remember { mutableStateOf(null) }
-
-    // создаём первый организм, если его нет
-    if (simulation.organisms.isEmpty()) {
-        simulation.spawnOrganism(
-            genome = GameConfig.randomGenome(),
-            position = Position(simulation.width / 2, simulation.height / 2),
-            random = Random
-        )
-    }
-
-    // Главный цикл симуляции
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(300L)
-            simulation.tick()
-            tickTrigger.value = simulation.tickCounter // заставляем UI перерисоваться
+        ).apply {
+            if (organisms.isEmpty()) {
+                spawnOrganism(
+                    genome = GameConfig.randomGenome(),
+                    position = Position(width / 2, height / 2),
+                    random = Random
+                )
+            }
         }
     }
-
-    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // Создаём ViewModel
+    val viewModel = remember { GameViewModel(repository, simulation) }
+    
+    // Подписываемся на состояние и эффекты
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    var showSaveDialog by remember { mutableStateOf(false) }
-    var showExitDialog by remember { mutableStateOf(false) }
-
-    // перехватываем системную кнопку "Назад"
-    BackHandler(enabled = true) {
-        showExitDialog = true
+    
+    // Обрабатываем эффекты Snackbar
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            if (effect is GameEffect.ShowSnackbar) {
+                snackbarHostState.showSnackbar(effect.message)
+            }
+        }
     }
-
+    
+    // Обрабатываем эффекты навигации
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            if (effect is GameEffect.NavigateBack) {
+                onBackToMenu()
+            }
+        }
+    }
+    
+    // Обрабатываем системную кнопку "Назад"
+    BackHandler(enabled = true) {
+        viewModel.dispatch(GameIntent.BackPressed)
+    }
+    
+    // UI
+    val currentSimulation = state.simulation
+    if (currentSimulation == null) {
+        Text("Загрузка...")
+        return
+    }
+    
     // Контейнер для контента и FAB'ов
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(WindowInsets.safeDrawing.asPaddingValues())
     ) {
-
         // Основной контент
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            val tick = tickTrigger.value // подписка на изменения
-
             // статистика
-            Text("Тик: $tick  Организмов: ${simulation.organisms.size}  Еды: ${simulation.food.size}")
-
+            Text("Тик: ${currentSimulation.tickCounter}  Организмов: ${currentSimulation.organisms.size}  Еды: ${currentSimulation.food.size}")
+            
             Spacer(Modifier.padding(4.dp))
-
+            
             // Сетка поля
-            GridView(simulation, tick, onCellClick = { pos ->
-                val org =
-                    simulation.organisms.firstOrNull { it.position.x == pos.x && it.position.y == pos.y }
-                selectedOrganism.value = org
+            GridView(currentSimulation, currentSimulation.tickCounter, onCellClick = { pos ->
+                viewModel.dispatch(GameIntent.CellClicked(pos))
             })
-
+            
             Spacer(Modifier.padding(4.dp))
-
+            
             // Мониторинг организмов (расширенный)
             LazyColumn(
                 modifier = Modifier
@@ -145,7 +164,7 @@ fun GameScreen(
                     .border(1.dp, Color.Gray)
                     .padding(4.dp)
             ) {
-                items(simulation.organisms.toList()) { org ->
+                items(currentSimulation.organisms.toList()) { org ->
                     val sexColor = if (org.sex == Sex.MALE) Color(0xFF2196F3) else Color(0xFFFF69B4)
                     Text(
                         text = "#${org.id} (${if (org.sex == Sex.MALE) "M" else "F"}) E:${org.energy} " +
@@ -156,7 +175,7 @@ fun GameScreen(
                 }
             }
         }
-
+        
         // ------ FAB панель ------
         Column(
             modifier = Modifier
@@ -165,32 +184,26 @@ fun GameScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             SmallFloatingActionButton(onClick = {
-                repeat(SPAWN_ORGANISH_COUNT) {
-                    val pos = Position(
-                        Random.nextInt(simulation.width),
-                        Random.nextInt(simulation.height)
-                    )
-                    if (simulation.isCellFree(pos)) simulation.spawnOrganism(
-                        GameConfig.randomGenome(),
-                        pos
-                    )
-                }
+                viewModel.dispatch(GameIntent.SpawnOrganisms)
             }) { Icon(Icons.Default.Add, contentDescription = "Add Organism") }
-
+            
             SmallFloatingActionButton(onClick = {
-                repeat(FAST_FORWARD_TICKS) { simulation.tick() }
-                tickTrigger.value = simulation.tickCounter
-            }) { Icon(Icons.Default.PlayArrow, contentDescription = "+$FAST_FORWARD_TICKS tics") }
-
-            SmallFloatingActionButton(onClick = { showSaveDialog = true }) {
+                viewModel.dispatch(GameIntent.FastForward)
+            }) { Icon(Icons.Default.PlayArrow, contentDescription = "Fast Forward") }
+            
+            SmallFloatingActionButton(onClick = {
+                viewModel.dispatch(GameIntent.Save(""))
+            }) {
                 Icon(Icons.Default.Save, contentDescription = "Save")
             }
-
-            SmallFloatingActionButton(onClick = { showExitDialog = true }) {
+            
+            SmallFloatingActionButton(onClick = {
+                viewModel.dispatch(GameIntent.BackPressed)
+            }) {
                 Icon(Icons.Default.Home, contentDescription = "Menu")
             }
         }
-
+        
         // SnackbarHost
         SnackbarHost(
             hostState = snackbarHostState,
@@ -199,67 +212,41 @@ fun GameScreen(
                 .padding(bottom = 48.dp) // чуть выше нижних кнопок
         )
     }
-
-    selectedOrganism.value?.let { org ->
-        OrganismDialog(organism = org, onDismiss = { selectedOrganism.value = null })
+    
+    // Диалог выбранного организма
+    state.selectedOrganism?.let { org ->
+        OrganismDialog(organism = org, onDismiss = {
+            viewModel.dispatch(GameIntent.ClearSelectedOrganism)
+        })
     }
-
-    if (showSaveDialog) {
+    
+    // Диалог сохранения
+    if (state.showSaveDialog) {
         var name by remember { mutableStateOf("") }
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
+        AlertDialog(
+            onDismissRequest = { viewModel.dispatch(GameIntent.CancelSave) },
             confirmButton = {
                 Button(
                     onClick = {
                         if (name.isNotBlank()) {
-                            com.example.gameoflive.save.SaveManager.saveSimulation(
-                                context,
-                                name,
-                                simulation
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Сохранено!")
-                            }
-                            showSaveDialog = false
+                            viewModel.dispatch(GameIntent.Save(name))
                         }
                     }
                 ) { Text("Сохранить") }
             },
             dismissButton = {
-                Button(onClick = { showSaveDialog = false }) {
+                Button(onClick = { viewModel.dispatch(GameIntent.CancelSave) }) {
                     Text("Отмена")
                 }
             },
             title = { Text("Сохранить игру") },
             text = {
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Название сохранения") }
                 )
             }
-        )
-    }
-
-    // Диалог подтверждения выхода
-    if (showExitDialog) {
-        AlertDialog(
-            onDismissRequest = { showExitDialog = false },
-            confirmButton = {
-                Button(onClick = {
-                    showExitDialog = false
-                    onBackToMenu()
-                }) {
-                    Text("Выйти")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showExitDialog = false }) {
-                    Text("Отмена")
-                }
-            },
-            title = { Text("Выйти из симуляции?") },
-            text = { Text("Все несохранённые данные будут потеряны.") }
         )
     }
 }

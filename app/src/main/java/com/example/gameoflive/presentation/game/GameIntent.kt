@@ -8,4 +8,7 @@ sealed interface GameIntent {
     data class CellClicked(val position: Position) : GameIntent
     data class Save(val name: String) : GameIntent
     data object BackPressed : GameIntent
+    data object ClearSelectedOrganism : GameIntent
+    data object CancelSave : GameIntent
+    data object SpawnOrganisms : GameIntent
 } 

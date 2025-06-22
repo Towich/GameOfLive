@@ -21,7 +21,7 @@ object GameConfig {
     const val FOOD_SPAWN_CHANCE = 10   // шанс из 1000 для каждой клетки
     const val PARTNER_SEARCH_RADIUS = 1
     const val FAST_FORWARD_TICKS = 100
-    const val SPAWN_ORGANISH_COUNT = 10
+    const val SPAWN_ORGANISM_COUNT = 10
 
     // Геном
     const val MUTATION_CHANCE = 5

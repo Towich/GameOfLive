@@ -4,16 +4,24 @@ import com.example.gameoflive.data.local.LocalSimulationDataSource
 import com.example.gameoflive.data.remote.RemoteSimulationDataSource
 import com.example.gameoflive.domain.model.SaveInfo
 import com.example.gameoflive.model.Simulation
+import com.example.gameoflive.model.copyDeep
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.map
 
 class SimulationRepositoryImpl(
     private val local: LocalSimulationDataSource,
     private val remote: RemoteSimulationDataSource
 ) : SimulationRepository {
+    
+    // Flow для принудительного обновления UI
+    private val updateTrigger = MutableSharedFlow<Unit>()
+    
     override suspend fun saveSimulation(name: String, simulation: Simulation) {
         local.save(name, simulation)
         // Можно отправить на сервер параллельно, если нужно
@@ -28,11 +36,22 @@ class SimulationRepositoryImpl(
 
     override suspend fun deleteSave(fileName: String): Boolean = local.delete(fileName)
 
-    override fun observeSimulation(simulation: Simulation): Flow<Simulation> = flow {
-        while (true) {
-            emit(simulation)
-            delay(300L)
-            simulation.tick()
-        }
-    }.flowOn(Dispatchers.Default)
+    override fun observeSimulation(simulation: Simulation): Flow<Simulation> {
+        val tickFlow = flow {
+            while (true) {
+                emit(simulation.copyDeep())
+                delay(300L)
+                simulation.tick()
+            }
+        }.flowOn(Dispatchers.Default)
+        
+        val updateFlow = updateTrigger.map { simulation.copyDeep() }
+        
+        return merge(tickFlow, updateFlow)
+    }
+    
+    // Метод для принудительного обновления UI
+    override suspend fun triggerUpdate() {
+        updateTrigger.emit(Unit)
+    }
 } 

@@ -98,4 +98,33 @@ class Simulation(
         }
         return nearest
     }
-} 
+
+    fun copyDeep(): Simulation {
+        val newSim = Simulation(width, height)
+        newSim.nextId = this.nextId
+        newSim.tickCounter = this.tickCounter
+        newSim.food.addAll(this.food.map { it.copy() })
+        newSim.organisms.addAll(this.organisms.map { it.copyOrganism() })
+        return newSim
+    }
+}
+
+// --- Копирование для реактивного UI ---
+
+fun Simulation.copyDeep(): Simulation {
+    val newSim = Simulation(width, height)
+    newSim.nextId = this.nextId
+    newSim.tickCounter = this.tickCounter
+    newSim.food.addAll(this.food.map { it.copy() })
+    newSim.organisms.addAll(this.organisms.map { it.copyOrganism() })
+    return newSim
+}
+
+fun Organism.copyOrganism(): Organism = Organism(
+    id = this.id,
+    position = this.position.copy(),
+    genome = this.genome,
+    sex = this.sex,
+    energy = this.energy,
+    age = this.age
+) 

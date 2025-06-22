@@ -8,5 +8,6 @@ data class GameState(
     val simulation: Simulation? = null,
     val selectedOrganism: Organism? = null,
     val isSaving: Boolean = false,
+    val showSaveDialog: Boolean = false,
     val error: String? = null
 ) 

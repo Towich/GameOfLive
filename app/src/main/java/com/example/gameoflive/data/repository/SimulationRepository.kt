@@ -15,4 +15,9 @@ interface SimulationRepository {
      * Репозиторий сам запускает тики на фоне.
      */
     fun observeSimulation(simulation: Simulation): Flow<Simulation>
+    
+    /**
+     * Принудительно обновляет UI после изменений симуляции.
+     */
+    suspend fun triggerUpdate()
 } 
