@@ -19,15 +19,6 @@ class SaveManager @Inject constructor(
     private val EXT = ".json"
     private val json = Json { prettyPrint = true }
 
-    /** Информация для отображения списка сохранений */
-    data class SaveInfo(
-        val fileName: String,
-        val name: String,
-        val tickCounter: Long,
-        val organismCount: Int,
-        val medianGenome: Genome
-    )
-
     fun saveSimulation(name: String, simulation: Simulation) {
         val snapshot = SimulationSnapshot.fromSimulation(name, simulation)
         val dir = File(context.filesDir, SAVE_DIR)
@@ -36,22 +27,25 @@ class SaveManager @Inject constructor(
         file.writeText(json.encodeToString(snapshot))
     }
 
-    fun listSaves(): List<SaveInfo> {
+    fun listSaves(): List<com.example.gameoflive.domain.model.SaveInfo> {
         val dir = File(context.filesDir, SAVE_DIR)
         if (!dir.exists()) return emptyList()
         return dir.listFiles { f -> f.extension == "json" }?.mapNotNull { file ->
             runCatching {
                 val snapshot: SimulationSnapshot = json.decodeFromString(file.readText())
                 val median = calculateMedianGenome(snapshot.organisms)
-                SaveInfo(
+                // Для старых сохранений без saveDate используем время модификации файла
+                val saveDate = if (snapshot.saveDate == 0L) file.lastModified() else snapshot.saveDate
+                com.example.gameoflive.domain.model.SaveInfo(
                     fileName = file.name,
                     name = snapshot.name,
                     tickCounter = snapshot.tickCounter,
                     organismCount = snapshot.organisms.size,
-                    medianGenome = median
+                    medianGenome = median,
+                    saveDate = saveDate
                 )
             }.getOrNull()
-        } ?: emptyList()
+        }?.sortedByDescending { it.saveDate } ?: emptyList() // Сортируем по дате (новые сверху)
     }
 
     fun loadSimulation(fileName: String): Simulation? {
@@ -88,7 +82,8 @@ class SaveManager @Inject constructor(
         val height: Int,
         val nextId: Int,
         val organisms: List<OrganismSnapshot>,
-        val food: List<Position>
+        val food: List<Position>,
+        val saveDate: Long = System.currentTimeMillis()
     ) {
         companion object {
             fun fromSimulation(name: String, sim: Simulation): SimulationSnapshot {
@@ -109,7 +104,8 @@ class SaveManager @Inject constructor(
                     height = sim.height,
                     nextId = sim.nextId,
                     organisms = orgs,
-                    food = sim.food.toList()
+                    food = sim.food.toList(),
+                    saveDate = System.currentTimeMillis()
                 )
             }
         }

@@ -72,6 +72,9 @@ fun LoadSimulationScreen(
                             Text(text = info.name, style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(4.dp))
                             Text("Тик: ${info.tickCounter}    Организмов: ${info.organismCount}")
+                            Text("Сохранено: ${info.getFormattedDate()}", 
+                                 style = MaterialTheme.typography.bodySmall,
+                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             val g = info.medianGenome
                             Text("Median Genome → S:${g.speed} M:${g.metabolism} D:${g.digestionEfficiency} Max:${g.maxAge}")
                         }
