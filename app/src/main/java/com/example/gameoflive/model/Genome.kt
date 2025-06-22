@@ -3,11 +3,13 @@ package com.example.gameoflive.model
 import android.util.Log
 import kotlin.random.Random
 import com.example.gameoflive.GameConfig
+import kotlinx.serialization.Serializable
 
 /**
  * Простая модель генома, который отвечает за основные параметры организма.
  * Все параметры выражены в целых числах для простоты вычислений.
  */
+@Serializable
 data class Genome(
     val speed: Int,               // количество клеток, которое организм может пройти за один тик
     val metabolism: Int,          // энергия, затрачиваемая каждый тик на поддержание жизнедеятельности

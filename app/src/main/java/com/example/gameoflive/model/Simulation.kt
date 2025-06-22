@@ -11,7 +11,7 @@ class Simulation(
     private val random: Random = Random,
     private val onEvent: (String) -> Unit = {},
 ) {
-    private var nextId = 0
+    var nextId: Int = 0
 
     /** Пищу храним как набор позиций для простоты. */
     val food: MutableSet<Position> = mutableSetOf()
@@ -20,7 +20,7 @@ class Simulation(
     val organisms: MutableList<Organism> = mutableListOf()
 
     /** Счётчик тиков, полезен для отрисовки */
-    var tickCounter: Long = 0; private set
+    var tickCounter: Long = 0
 
     fun spawnOrganism(genome: Genome, position: Position, random: Random = Random): Organism {
         val org = Organism(id = nextId++, position = position, genome = genome, sex = if (random.nextBoolean()) Sex.MALE else Sex.FEMALE)
@@ -30,7 +30,7 @@ class Simulation(
         return org
     }
 
-    fun spawnRandomFood() {
+    private fun spawnRandomFood() {
         val before = food.size
         for (x in 0 until width) {
             for (y in 0 until height) {

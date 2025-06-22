@@ -7,25 +7,42 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -36,20 +53,28 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gameoflive.GameConfig
+import com.example.gameoflive.GameConfig.FAST_FORWARD_TICKS
+import com.example.gameoflive.GameConfig.SPAWN_ORGANISH_COUNT
 import com.example.gameoflive.model.Organism
 import com.example.gameoflive.model.Position
 import com.example.gameoflive.model.Sex
 import com.example.gameoflive.model.Simulation
 import kotlinx.coroutines.delay
 import kotlin.random.Random
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.activity.compose.BackHandler
+import kotlinx.coroutines.launch
 
 @Composable
-fun GameScreen() {
-    val simulation =
-        remember { Simulation(width = GameConfig.FIELD_WIDTH, height = GameConfig.FIELD_HEIGHT) }
+fun GameScreen(
+    initialSimulation: Simulation? = null,
+    onBackToMenu: () -> Unit = {}
+) {
+    val simulation = remember {
+        initialSimulation ?: Simulation(
+            width = GameConfig.FIELD_WIDTH,
+            height = GameConfig.FIELD_HEIGHT
+        )
+    }
 
     val tickTrigger = remember { mutableStateOf(0L) }
     val selectedOrganism: MutableState<Organism?> = remember { mutableStateOf(null) }
@@ -72,74 +97,170 @@ fun GameScreen() {
         }
     }
 
-    // Учтём системные бары (status/navigation bar), чтобы контент не перекрывался
-    Column(
-        Modifier
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    // перехватываем системную кнопку "Назад"
+    BackHandler(enabled = true) {
+        showExitDialog = true
+    }
+
+    // Контейнер для контента и FAB'ов
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
             .padding(WindowInsets.safeDrawing.asPaddingValues())
-            .padding(16.dp)
     ) {
-        ControlPanel(
-            onAddOrganism = {
-                val pos =
-                    Position(Random.nextInt(simulation.width), Random.nextInt(simulation.height))
-                if (simulation.isCellFree(pos)) {
-                    simulation.spawnOrganism(GameConfig.randomGenome(), pos)
-                }
-            },
-            onFastForward = {
-                repeat(100) {
-                    simulation.tick()
-                }
-                tickTrigger.value = simulation.tickCounter
-            }
-        )
-        Spacer(modifier = Modifier.padding(8.dp))
-        val tick = tickTrigger.value // подписка на изменения
 
-        // статистика
-        Text("Тик: $tick  Организмов: ${simulation.organisms.size}  Еды: ${simulation.food.size}")
-
-        Spacer(Modifier.padding(4.dp))
-
-        // Сетка поля
-        GridView(simulation, tick, onCellClick = { pos ->
-            val org =
-                simulation.organisms.firstOrNull { it.position.x == pos.x && it.position.y == pos.y }
-            selectedOrganism.value = org
-        })
-
-        Spacer(Modifier.padding(4.dp))
-
-        // Мониторинг организмов (расширенный)
-        LazyColumn(
+        // Основной контент
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .border(1.dp, Color.Gray)
-                .padding(4.dp)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            items(simulation.organisms.toList()) { org ->
-                val sexColor = if (org.sex == Sex.MALE) Color(0xFF2196F3) else Color(0xFFFF69B4)
-                Text(
-                    text = "#${org.id} (${if (org.sex == Sex.MALE) "M" else "F"}) E:${org.energy} " +
-                            "A:${org.age} G:[S:${org.genome.speed} M:${org.genome.metabolism} D:${org.genome.digestionEfficiency} Max:${org.genome.maxAge}]",
-                    fontSize = 11.sp,
-                    color = sexColor
-                )
+            val tick = tickTrigger.value // подписка на изменения
+
+            // статистика
+            Text("Тик: $tick  Организмов: ${simulation.organisms.size}  Еды: ${simulation.food.size}")
+
+            Spacer(Modifier.padding(4.dp))
+
+            // Сетка поля
+            GridView(simulation, tick, onCellClick = { pos ->
+                val org =
+                    simulation.organisms.firstOrNull { it.position.x == pos.x && it.position.y == pos.y }
+                selectedOrganism.value = org
+            })
+
+            Spacer(Modifier.padding(4.dp))
+
+            // Мониторинг организмов (расширенный)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .border(1.dp, Color.Gray)
+                    .padding(4.dp)
+            ) {
+                items(simulation.organisms.toList()) { org ->
+                    val sexColor = if (org.sex == Sex.MALE) Color(0xFF2196F3) else Color(0xFFFF69B4)
+                    Text(
+                        text = "#${org.id} (${if (org.sex == Sex.MALE) "M" else "F"}) E:${org.energy} " +
+                                "A:${org.age} G:[S:${org.genome.speed} M:${org.genome.metabolism} D:${org.genome.digestionEfficiency} Max:${org.genome.maxAge}]",
+                        fontSize = 11.sp,
+                        color = sexColor
+                    )
+                }
             }
         }
+
+        // ------ FAB панель ------
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SmallFloatingActionButton(onClick = {
+                repeat(SPAWN_ORGANISH_COUNT) {
+                    val pos = Position(
+                        Random.nextInt(simulation.width),
+                        Random.nextInt(simulation.height)
+                    )
+                    if (simulation.isCellFree(pos)) simulation.spawnOrganism(
+                        GameConfig.randomGenome(),
+                        pos
+                    )
+                }
+            }) { Icon(Icons.Default.Add, contentDescription = "Add Organism") }
+
+            SmallFloatingActionButton(onClick = {
+                repeat(FAST_FORWARD_TICKS) { simulation.tick() }
+                tickTrigger.value = simulation.tickCounter
+            }) { Icon(Icons.Default.PlayArrow, contentDescription = "+$FAST_FORWARD_TICKS tics") }
+
+            SmallFloatingActionButton(onClick = { showSaveDialog = true }) {
+                Icon(Icons.Default.Save, contentDescription = "Save")
+            }
+
+            SmallFloatingActionButton(onClick = { showExitDialog = true }) {
+                Icon(Icons.Default.Home, contentDescription = "Menu")
+            }
+        }
+
+        // SnackbarHost
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 48.dp) // чуть выше нижних кнопок
+        )
     }
 
     selectedOrganism.value?.let { org ->
         OrganismDialog(organism = org, onDismiss = { selectedOrganism.value = null })
     }
-}
 
-@Composable
-private fun ControlPanel(onAddOrganism: () -> Unit, onFastForward: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = onAddOrganism) { Text("Добавить организм") }
-        Button(onClick = onFastForward) { Text("+100 тиков") }
+    if (showSaveDialog) {
+        var name by remember { mutableStateOf("") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (name.isNotBlank()) {
+                            com.example.gameoflive.save.SaveManager.saveSimulation(
+                                context,
+                                name,
+                                simulation
+                            )
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Сохранено!")
+                            }
+                            showSaveDialog = false
+                        }
+                    }
+                ) { Text("Сохранить") }
+            },
+            dismissButton = {
+                Button(onClick = { showSaveDialog = false }) {
+                    Text("Отмена")
+                }
+            },
+            title = { Text("Сохранить игру") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Название сохранения") }
+                )
+            }
+        )
+    }
+
+    // Диалог подтверждения выхода
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            confirmButton = {
+                Button(onClick = {
+                    showExitDialog = false
+                    onBackToMenu()
+                }) {
+                    Text("Выйти")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showExitDialog = false }) {
+                    Text("Отмена")
+                }
+            },
+            title = { Text("Выйти из симуляции?") },
+            text = { Text("Все несохранённые данные будут потеряны.") }
+        )
     }
 }
 
@@ -221,11 +342,21 @@ private fun GridView(sim: Simulation, tick: Long, onCellClick: (Position) -> Uni
             val stroke = 0.5f
             for (x in 0..sim.width) {
                 val xCoord = x * cellSizePx
-                drawLine(gridColor, Offset(xCoord, 0f), Offset(xCoord, fieldHeightDp.toPx()), strokeWidth = stroke)
+                drawLine(
+                    gridColor,
+                    Offset(xCoord, 0f),
+                    Offset(xCoord, fieldHeightDp.toPx()),
+                    strokeWidth = stroke
+                )
             }
             for (y in 0..sim.height) {
                 val yCoord = y * cellSizePx
-                drawLine(gridColor, Offset(0f, yCoord), Offset(fieldWidthDp.toPx(), yCoord), strokeWidth = stroke)
+                drawLine(
+                    gridColor,
+                    Offset(0f, yCoord),
+                    Offset(fieldWidthDp.toPx(), yCoord),
+                    strokeWidth = stroke
+                )
             }
         }
     }

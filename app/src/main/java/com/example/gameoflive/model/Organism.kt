@@ -3,12 +3,15 @@ package com.example.gameoflive.model
 import android.util.Log
 import kotlin.random.Random
 import com.example.gameoflive.GameConfig
+import kotlinx.serialization.Serializable
 
 /** Положение на игровом поле */
+@Serializable
 data class Position(var x: Int, var y: Int) {
     fun copy() = Position(x, y)
 }
 
+@Serializable
 enum class Sex { MALE, FEMALE }
 
 class Organism(
