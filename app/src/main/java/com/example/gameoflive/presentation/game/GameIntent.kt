@@ -11,4 +11,5 @@ sealed interface GameIntent {
     data object ClearSelectedOrganism : GameIntent
     data object CancelSave : GameIntent
     data object SpawnOrganisms : GameIntent
+    data class LoadSimulation(val fileName: String) : GameIntent
 } 

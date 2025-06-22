@@ -2,6 +2,7 @@ package com.example.gameoflive.presentation.game
 
 import com.example.gameoflive.model.Organism
 import com.example.gameoflive.model.Simulation
+import com.example.gameoflive.model.Genome
 
 // Первоначальное состояние создаётся с пустой симуляцией.
 data class GameState(
@@ -10,5 +11,6 @@ data class GameState(
     val isSaving: Boolean = false,
     val showSaveDialog: Boolean = false,
     val showExitDialog: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val medianGenome: Genome? = null
 ) 
