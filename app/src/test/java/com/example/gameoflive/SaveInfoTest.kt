@@ -15,9 +15,9 @@ class SaveInfoTest {
             name = "Test Save",
             tickCounter = 100,
             organismCount = 50,
-            medianGenome = Genome(speed = 5, metabolism = 3, digestionEfficiency = 7, maxAge = 100),
-            minGenome = Genome(speed = 1, metabolism = 1, digestionEfficiency = 1, maxAge = 50),
-            maxGenome = Genome(speed = 10, metabolism = 10, digestionEfficiency = 10, maxAge = 200),
+            medianGenome = Genome(speed = 5, metabolism = 3, digestionEfficiency = 7, maxAge = 100, perception = 3),
+            minGenome = Genome(speed = 1, metabolism = 1, digestionEfficiency = 1, maxAge = 50, perception = 1),
+            maxGenome = Genome(speed = 10, metabolism = 10, digestionEfficiency = 10, maxAge = 200, perception = 5),
             saveDate = 1704110400000L // 1 января 2024, 12:00 UTC
         )
         
@@ -38,9 +38,9 @@ class SaveInfoTest {
             name = "Test Save",
             tickCounter = 100,
             organismCount = 50,
-            medianGenome = Genome(speed = 5, metabolism = 3, digestionEfficiency = 7, maxAge = 100),
-            minGenome = Genome(speed = 1, metabolism = 1, digestionEfficiency = 1, maxAge = 50),
-            maxGenome = Genome(speed = 10, metabolism = 10, digestionEfficiency = 10, maxAge = 200),
+            medianGenome = Genome(speed = 5, metabolism = 3, digestionEfficiency = 7, maxAge = 100, perception = 3),
+            minGenome = Genome(speed = 1, metabolism = 1, digestionEfficiency = 1, maxAge = 50, perception = 1),
+            maxGenome = Genome(speed = 10, metabolism = 10, digestionEfficiency = 10, maxAge = 200, perception = 5),
             saveDate = System.currentTimeMillis()
         )
         

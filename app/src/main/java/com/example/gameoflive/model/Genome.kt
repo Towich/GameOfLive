@@ -14,14 +14,32 @@ data class Genome(
     val speed: Int,               // количество клеток, которое организм может пройти за один тик
     val metabolism: Int,          // энергия, затрачиваемая каждый тик на поддержание жизнедеятельности
     val digestionEfficiency: Int, // сколько энергии организм получает из одной еды
-    val maxAge: Int               // максимальный возраст организма в тиках
+    val maxAge: Int,              // максимальный возраст организма в тиках
+    val perception: Int           // радиус, в котором организм может видеть еду и партнеров
 ) {
 
     companion object {
         fun random(random: Random = Random): Genome {
             val genome = GameConfig.randomGenome(random)
-            Log.d("Genome", "Random genome generated: $genome")
+            // Log.d("Genome", "Random genome generated: $genome")
             return genome
+        }
+
+        /**
+         * Применить мутацию к значению с заданными границами
+         */
+        private fun mutateValue(
+            value: Int, 
+            random: Random, 
+            minValue: Int, 
+            maxValue: Int = Int.MAX_VALUE
+        ): Int {
+            return if (random.nextInt(100) < GameConfig.MUTATION_CHANCE) {
+                (value + random.nextInt(-GameConfig.MUTATION_DELTA, GameConfig.MUTATION_DELTA + 1))
+                    .coerceIn(minValue, maxValue)
+            } else {
+                value
+            }
         }
 
         /**
@@ -34,22 +52,17 @@ data class Genome(
             var digestionEfficiency =
                 if (random.nextBoolean()) mother.digestionEfficiency else father.digestionEfficiency
             var maxAge = if (random.nextBoolean()) mother.maxAge else father.maxAge
+            var perception = if (random.nextBoolean()) mother.perception else father.perception
 
-            // небольшая мутация с некоторой вероятностью
-            if (random.nextInt(100) < GameConfig.MUTATION_CHANCE) speed =
-                (speed + random.nextInt(-GameConfig.MUTATION_DELTA, GameConfig.MUTATION_DELTA + 1)).coerceAtLeast(1)
-            if (random.nextInt(100) < GameConfig.MUTATION_CHANCE) metabolism =
-                (metabolism + random.nextInt(-GameConfig.MUTATION_DELTA, GameConfig.MUTATION_DELTA + 1)).coerceAtLeast(1)
-            if (random.nextInt(100) < GameConfig.MUTATION_CHANCE) digestionEfficiency =
-                (digestionEfficiency + random.nextInt(
-                    -GameConfig.MUTATION_DELTA,
-                    GameConfig.MUTATION_DELTA + 1
-                )).coerceAtLeast(1)
-            if (random.nextInt(100) < GameConfig.MUTATION_CHANCE) maxAge =
-                (maxAge + random.nextInt(-10, 11)).coerceAtLeast(50)
+            // применяем мутации
+            speed = mutateValue(speed, random, 1)
+            metabolism = mutateValue(metabolism, random, 1)
+            digestionEfficiency = mutateValue(digestionEfficiency, random, 1)
+            maxAge = mutateValue(maxAge, random, 50)
+            perception = mutateValue(perception, random, 1)
 
-            val child = Genome(speed, metabolism, digestionEfficiency, maxAge)
-            Log.d("Genome", "Inherit => mother=$mother father=$father child=$child")
+            val child = Genome(speed, metabolism, digestionEfficiency, maxAge, perception)
+            // Log.d("Genome", "Inherit => mother=$mother father=$father child=$child")
             return child
         }
     }

@@ -290,6 +290,15 @@ private fun GameHeader(simulation: Simulation, medianGenome: com.example.gameofl
                     GenomeStat("Скорость", medianGenome.speed.toString(), Color(0xFF26D0CE))
                     GenomeStat("Метаболизм", medianGenome.metabolism.toString(), Color(0xFFFF6B6B))
                     GenomeStat("Пищеварение", medianGenome.digestionEfficiency.toString(), Color(0xFF4ECDC4))
+                    GenomeStat("Восприятие", medianGenome.perception.toString(), Color(0xFF9B59B6))
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
                     GenomeStat("Макс. возраст", medianGenome.maxAge.toString(), Color(0xFF95A5A6))
                 }
             }
@@ -696,6 +705,7 @@ private fun OrganismDialog(
                 InfoRow("Скорость", organism.genome.speed.toString())
                 InfoRow("Метаболизм", organism.genome.metabolism.toString())
                 InfoRow("Эфф. пищеварения", organism.genome.digestionEfficiency.toString())
+                InfoRow("Восприятие", organism.genome.perception.toString())
                 InfoRow("Макс. возраст", organism.genome.maxAge.toString())
             }
         },

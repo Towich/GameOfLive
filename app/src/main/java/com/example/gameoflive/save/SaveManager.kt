@@ -153,27 +153,30 @@ class SaveManager @Inject constructor(
             speed = median(list.map { it.genome.speed }),
             metabolism = median(list.map { it.genome.metabolism }),
             digestionEfficiency = median(list.map { it.genome.digestionEfficiency }),
-            maxAge = median(list.map { it.genome.maxAge })
+            maxAge = median(list.map { it.genome.maxAge }),
+            perception = median(list.map { it.genome.perception })
         )
     }
 
     private fun calculateMinGenome(list: List<OrganismSnapshot>): Genome {
-        if (list.isEmpty()) return Genome(0, 0, 0, 0)
+        if (list.isEmpty()) return Genome(0, 0, 0, 0, 0)
         return Genome(
             speed = list.minOf { it.genome.speed },
             metabolism = list.minOf { it.genome.metabolism },
             digestionEfficiency = list.minOf { it.genome.digestionEfficiency },
-            maxAge = list.minOf { it.genome.maxAge }
+            maxAge = list.minOf { it.genome.maxAge },
+            perception = list.minOf { it.genome.perception }
         )
     }
 
     private fun calculateMaxGenome(list: List<OrganismSnapshot>): Genome {
-        if (list.isEmpty()) return Genome(0, 0, 0, 0)
+        if (list.isEmpty()) return Genome(0, 0, 0, 0, 0)
         return Genome(
             speed = list.maxOf { it.genome.speed },
             metabolism = list.maxOf { it.genome.metabolism },
             digestionEfficiency = list.maxOf { it.genome.digestionEfficiency },
-            maxAge = list.maxOf { it.genome.maxAge }
+            maxAge = list.maxOf { it.genome.maxAge },
+            perception = list.maxOf { it.genome.perception }
         )
     }
 } 

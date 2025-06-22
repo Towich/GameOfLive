@@ -20,7 +20,7 @@ object GameConfig {
     // Симуляция
     const val FOOD_SPAWN_CHANCE = 10   // шанс из 1000 для каждой клетки
     const val PARTNER_SEARCH_RADIUS = 1
-    const val FAST_FORWARD_TICKS = 100
+    const val FAST_FORWARD_TICKS = 1000
     const val SPAWN_ORGANISM_COUNT = 10
 
     // Геном
@@ -35,11 +35,14 @@ object GameConfig {
     const val GENOME_DIGESTION_MAX = 25
     const val GENOME_MAX_AGE_MIN = 200
     const val GENOME_MAX_AGE_MAX = 400
+    const val GENOME_PERCEPTION_MIN = 1
+    const val GENOME_PERCEPTION_MAX = 5
 
     fun randomGenome(random: Random = Random): Genome = Genome(
         speed = random.nextInt(GENOME_SPEED_MIN, GENOME_SPEED_MAX),
         metabolism = random.nextInt(GENOME_METABOLISM_MIN, GENOME_METABOLISM_MAX),
         digestionEfficiency = random.nextInt(GENOME_DIGESTION_MIN, GENOME_DIGESTION_MAX),
-        maxAge = random.nextInt(GENOME_MAX_AGE_MIN, GENOME_MAX_AGE_MAX)
+        maxAge = random.nextInt(GENOME_MAX_AGE_MIN, GENOME_MAX_AGE_MAX),
+        perception = random.nextInt(GENOME_PERCEPTION_MIN, GENOME_PERCEPTION_MAX)
     )
 } 

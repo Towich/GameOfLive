@@ -39,15 +39,20 @@ class Organism(
         age++
         if (age > genome.maxAge) {
             phase = Phase.DEATH
-            Log.d("Organism", "Organism $id died (old age)")
+//            Log.d("Organism", "Organism $id died (old age)")
             return
         }
 
         // тратим энергию на поддержание жизни
         energy -= genome.metabolism
+        
+        // дополнительная энергетическая стоимость за высокое восприятие
+        val perceptionCost = (genome.perception - 1) * 2 // 0, 2, 4, 6, 8 энергии за восприятие 1-5
+        energy -= perceptionCost
+        
         if (energy <= 0) {
             phase = Phase.DEATH
-            Log.d("Organism", "Organism $id died (energy depleted)")
+//            Log.d("Organism", "Organism $id died (energy depleted)")
             return
         }
 
@@ -59,7 +64,7 @@ class Organism(
         // поедание еды, если она есть в клетке
         if (sim.consumeFoodAt(position)) {
             energy += genome.digestionEfficiency
-            Log.d("Organism", "Organism $id ate food; energy=$energy")
+//            Log.d("Organism", "Organism $id ate food; energy=$energy")
         }
 
         // попытка спаривания
@@ -76,7 +81,7 @@ class Organism(
     }
 
     private fun attemptReproduce(sim: Simulation, random: Random) {
-        val partner = sim.findPartnerNearby(this)
+        val partner = sim.findPartnerNearby(this, genome.perception)
         if (partner != null && this.id < partner.id && sex != partner.sex) { // только один из пары создаёт ребёнка
             energy -= GameConfig.REPRODUCTION_ENERGY_COST // трата энергии
             partner.energy -= GameConfig.REPRODUCTION_ENERGY_COST
@@ -92,7 +97,7 @@ class Organism(
     }
 
     private fun moveTowardsFood(sim: Simulation, random: Random) {
-        val target = sim.findNearestFood(position, genome.speed)
+        val target = sim.findNearestFood(position, genome.perception)
         val newPos = if (target != null) {
             stepTowards(position, target)
         } else {

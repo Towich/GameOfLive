@@ -198,6 +198,7 @@ private fun GenomeCard(
             GenomeStat("Скорость", genome.speed, color)
             GenomeStat("Метаболизм", genome.metabolism, color)
             GenomeStat("Пищеварение", genome.digestionEfficiency, color)
+            GenomeStat("Восприятие", genome.perception, color)
             GenomeStat("Макс. возраст", genome.maxAge, color)
         }
     }

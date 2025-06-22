@@ -1,9 +1,8 @@
 package com.example.gameoflive.model
 
+import com.example.gameoflive.GameConfig
 import kotlin.math.abs
 import kotlin.random.Random
-import android.util.Log
-import com.example.gameoflive.GameConfig
 
 class Simulation(
     val width: Int = GameConfig.FIELD_WIDTH,
@@ -23,9 +22,14 @@ class Simulation(
     var tickCounter: Long = 0
 
     fun spawnOrganism(genome: Genome, position: Position, random: Random = Random): Organism {
-        val org = Organism(id = nextId++, position = position, genome = genome, sex = if (random.nextBoolean()) Sex.MALE else Sex.FEMALE)
+        val org = Organism(
+            id = nextId++,
+            position = position,
+            genome = genome,
+            sex = if (random.nextBoolean()) Sex.MALE else Sex.FEMALE
+        )
         organisms += org
-        Log.d("Simulation", "Spawned organism id=${org.id} at $position genome=$genome")
+//        Log.d("Simulation", "Spawned organism id=${org.id} at $position genome=$genome")
         onEvent("Родился организм #${org.id} на (${position.x},${position.y})")
         return org
     }
@@ -40,12 +44,12 @@ class Simulation(
             }
         }
         val added = food.size - before
-        if (added > 0) Log.d("Simulation", "Spawned $added food items (total=${food.size})")
+//        if (added > 0) Log.d("Simulation", "Spawned $added food items (total=${food.size})")
     }
 
     fun tick() {
         tickCounter++
-        Log.d("Simulation", "=== Tick $tickCounter === organisms=${organisms.size}")
+//        Log.d("Simulation", "=== Tick $tickCounter === organisms=${organisms.size}")
 
         // добавляем новую еду случайно
         spawnRandomFood()
@@ -60,7 +64,7 @@ class Simulation(
         if (dead.isNotEmpty()) {
             dead.forEach { onEvent("Организм #${it.id} умер") }
             organisms.removeAll(dead.toSet())
-            Log.d("Simulation", "Removed ${dead.size} dead organisms; now size=${organisms.size}")
+//            Log.d("Simulation", "Removed ${dead.size} dead organisms; now size=${organisms.size}")
         }
     }
 
@@ -68,12 +72,18 @@ class Simulation(
 
     fun consumeFoodAt(pos: Position): Boolean = if (food.remove(pos)) true else false
 
-    fun isCellFree(pos: Position): Boolean = organisms.none { it.position.x == pos.x && it.position.y == pos.y }
+    fun isCellFree(pos: Position): Boolean =
+        organisms.none { it.position.x == pos.x && it.position.y == pos.y }
 
-    fun clampPosition(pos: Position): Position = Position(pos.x.coerceIn(0, width - 1), pos.y.coerceIn(0, height - 1))
+    fun clampPosition(pos: Position): Position =
+        Position(pos.x.coerceIn(0, width - 1), pos.y.coerceIn(0, height - 1))
 
-    fun findPartnerNearby(seeker: Organism): Organism? {
-        return organisms.firstOrNull { it !== seeker && abs(it.position.x - seeker.position.x) <= GameConfig.PARTNER_SEARCH_RADIUS && abs(it.position.y - seeker.position.y) <= GameConfig.PARTNER_SEARCH_RADIUS }
+    fun findPartnerNearby(seeker: Organism, searchRadius: Int): Organism? {
+        return organisms.firstOrNull {
+            it !== seeker &&
+                    abs(it.position.x - seeker.position.x) <= searchRadius &&
+                    abs(it.position.y - seeker.position.y) <= searchRadius
+        }
     }
 
     fun findFreeAdjacent(pos: Position): Position? {
