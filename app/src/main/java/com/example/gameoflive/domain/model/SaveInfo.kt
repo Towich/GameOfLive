@@ -15,6 +15,8 @@ data class SaveInfo(
     val tickCounter: Long,
     val organismCount: Int,
     val medianGenome: Genome,
+    val minGenome: Genome = Genome(0, 0, 0, 0),
+    val maxGenome: Genome = Genome(0, 0, 0, 0),
     val saveDate: Long
 ) {
     fun getFormattedDate(): String {

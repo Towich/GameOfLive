@@ -1,5 +1,6 @@
 package com.example.gameoflive.presentation.game
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gameoflive.GameConfig.FAST_FORWARD_TICKS
@@ -11,12 +12,16 @@ import com.example.gameoflive.domain.usecase.SpawnOrganismUseCase
 import com.example.gameoflive.domain.usecase.TickSimulationUseCase
 import com.example.gameoflive.model.Simulation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,40 +36,65 @@ class GameViewModel @Inject constructor(
     private var initialSimulation: Simulation? = null
 
     private val _state = MutableStateFlow(GameState())
-    val state: StateFlow<GameState> = _state
+    val state: StateFlow<GameState> = _state.asStateFlow()
 
-    private val _effect = Channel<GameEffect>()
-    val effect = _effect.receiveAsFlow()
+    private val _effect = MutableSharedFlow<GameEffect>()
+    val effect = _effect.asSharedFlow()
 
-    private val intentChannel = Channel<GameIntent>(Channel.UNLIMITED)
+    private val _intent = MutableSharedFlow<GameIntent>()
+
+    init {
+        startGameLoop()
+    }
 
     fun initialize(simulation: Simulation) {
+        Log.d("GameViewModel", "Инициализация с симуляцией")
         initialSimulation = simulation
         _state.value = GameState(
             simulation = simulation.copyDeep(),
             medianGenome = calculateMedianGenomeUseCase(simulation.organisms.toList())
         )
+    }
 
+    fun dispatch(intent: GameIntent) {
+        Log.d("GameViewModel", "Получен intent: $intent")
         viewModelScope.launch {
-            while (true) {
-                val intent = withTimeoutOrNull(300L) { intentChannel.receive() }
-                if (intent != null) {
-                    handleIntent(intent)
-                } else {
-                    initialSimulation?.let { sim ->
-                        tickSimulationUseCase(sim)
-                        _state.value = _state.value.copy(
-                            simulation = sim.copyDeep(),
-                            medianGenome = calculateMedianGenomeUseCase(sim.organisms.toList())
-                        )
+            _intent.emit(intent)
+        }
+    }
+
+    private fun startGameLoop() {
+        viewModelScope.launch {
+            Log.d("GameViewModel", "Запуск игрового цикла")
+            
+            // Создаем Flow для автоматического тика симуляции
+            val tickFlow = flow {
+                while (true) {
+                    delay(300) // 300ms между тиками
+                    emit(Unit)
+                }
+            }
+            
+            // Объединяем интенты и автоматические тики
+            merge(_intent, tickFlow).collect { event ->
+                when (event) {
+                    is GameIntent -> {
+                        Log.d("GameViewModel", "Обрабатываем intent: $event")
+                        handleIntent(event)
+                    }
+                    Unit -> {
+                        // Автоматический тик симуляции
+                        initialSimulation?.let { sim ->
+                            tickSimulationUseCase(sim)
+                            _state.value = _state.value.copy(
+                                simulation = sim.copyDeep(),
+                                medianGenome = calculateMedianGenomeUseCase(sim.organisms.toList())
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-
-    fun dispatch(intent: GameIntent) {
-        viewModelScope.launch { intentChannel.send(intent) }
     }
 
     private suspend fun handleIntent(intent: GameIntent) {
@@ -72,9 +102,6 @@ class GameViewModel @Inject constructor(
 
         when (intent) {
             is GameIntent.Init -> {}
-            is GameIntent.LoadSimulation -> {
-                loadSimulation(intent.fileName)
-            }
 
             is GameIntent.FastForward -> {
                 tickSimulationUseCase(sim, FAST_FORWARD_TICKS)
@@ -96,13 +123,14 @@ class GameViewModel @Inject constructor(
                     _state.value = _state.value.copy(isSaving = true)
                     saveSimulationUseCase(intent.name, sim)
                     _state.value = _state.value.copy(isSaving = false, showSaveDialog = false)
-                    _effect.send(GameEffect.ShowSnackbar("Сохранено!"))
+                    _effect.emit(GameEffect.ShowSnackbar("Сохранено!"))
                 } else {
                     _state.value = _state.value.copy(showSaveDialog = true)
                 }
             }
 
             is GameIntent.BackPressed -> onBackPressed()
+            
             is GameIntent.ClearSelectedOrganism -> {
                 _state.value = _state.value.copy(selectedOrganism = null)
             }
@@ -121,13 +149,20 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    private fun loadSimulation(fileName: String) {
+    fun loadSimulation(fileName: String) {
         viewModelScope.launch {
+            Log.d("GameViewModel", "Начало загрузки симуляции: $fileName")
             val simulation = repository.loadSimulation(fileName)
             if (simulation != null) {
-                initialize(simulation)
+                Log.d("GameViewModel", "Симуляция успешно загружена: $fileName")
+                initialSimulation = simulation
+                _state.value = _state.value.copy(
+                    simulation = simulation.copyDeep(),
+                    medianGenome = calculateMedianGenomeUseCase(simulation.organisms.toList())
+                )
             } else {
-                _effect.send(GameEffect.ShowSnackbar("Ошибка загрузки симуляции"))
+                Log.e("GameViewModel", "Ошибка загрузки симуляции: $fileName")
+                _effect.emit(GameEffect.ShowSnackbar("Ошибка загрузки симуляции"))
             }
         }
     }
@@ -138,7 +173,7 @@ class GameViewModel @Inject constructor(
 
     fun confirmExit() {
         _state.value = _state.value.copy(showExitDialog = false)
-        viewModelScope.launch { _effect.send(GameEffect.NavigateBack) }
+        viewModelScope.launch { _effect.emit(GameEffect.NavigateBack) }
     }
 
     fun cancelExit() {

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.map
+import android.util.Log
 
 class SimulationRepositoryImpl(
     private val local: LocalSimulationDataSource,
@@ -28,7 +29,19 @@ class SimulationRepositoryImpl(
     }
 
     override suspend fun loadSimulation(fileName: String): Simulation? {
-        return local.load(fileName)
+        Log.d("SimulationRepository", "Запрос загрузки симуляции: $fileName")
+        return try {
+            val result = local.load(fileName)
+            if (result != null) {
+                Log.d("SimulationRepository", "Симуляция загружена из локального источника: $fileName")
+            } else {
+                Log.e("SimulationRepository", "Локальный источник вернул null для: $fileName")
+            }
+            result
+        } catch (e: Exception) {
+            Log.e("SimulationRepository", "Ошибка при загрузке симуляции $fileName: ${e.message}", e)
+            null
+        }
     }
 
     override suspend fun listSaves(): List<SaveInfo> = local.list()

@@ -48,6 +48,7 @@ import androidx.activity.compose.BackHandler
 import com.example.gameoflive.ui.theme.DesignConstants
 import kotlin.random.Random
 import androidx.hilt.navigation.compose.hiltViewModel
+import android.util.Log
 
 @Composable
 fun GameScreen(
@@ -59,8 +60,9 @@ fun GameScreen(
     
     // Загружаем симуляцию, если указано имя файла
     LaunchedEffect(saveFileName) {
+        Log.d("GameScreen", "LaunchedEffect triggered with saveFileName: $saveFileName")
         if (saveFileName != null) {
-            viewModel.dispatch(GameIntent.LoadSimulation(saveFileName))
+            viewModel.loadSimulation(saveFileName)
         } else {
             // Создаём новую симуляцию
             val newSimulation = Simulation(

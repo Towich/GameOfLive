@@ -30,6 +30,8 @@ class LocalSimulationDataSourceImpl @Inject constructor(
                 tickCounter = it.tickCounter,
                 organismCount = it.organismCount,
                 medianGenome = it.medianGenome,
+                minGenome = it.minGenome,
+                maxGenome = it.maxGenome,
                 saveDate = it.saveDate
             )
         }

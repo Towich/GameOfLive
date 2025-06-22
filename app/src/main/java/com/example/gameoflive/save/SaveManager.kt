@@ -1,6 +1,7 @@
 package com.example.gameoflive.save
 
 import android.content.Context
+import android.util.Log
 import com.example.gameoflive.model.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -34,6 +35,8 @@ class SaveManager @Inject constructor(
             runCatching {
                 val snapshot: SimulationSnapshot = json.decodeFromString(file.readText())
                 val median = calculateMedianGenome(snapshot.organisms)
+                val min = calculateMinGenome(snapshot.organisms)
+                val max = calculateMaxGenome(snapshot.organisms)
                 // Для старых сохранений без saveDate используем время модификации файла
                 val saveDate = if (snapshot.saveDate == 0L) file.lastModified() else snapshot.saveDate
                 com.example.gameoflive.domain.model.SaveInfo(
@@ -42,6 +45,8 @@ class SaveManager @Inject constructor(
                     tickCounter = snapshot.tickCounter,
                     organismCount = snapshot.organisms.size,
                     medianGenome = median,
+                    minGenome = min,
+                    maxGenome = max,
                     saveDate = saveDate
                 )
             }.getOrNull()
@@ -51,9 +56,19 @@ class SaveManager @Inject constructor(
     fun loadSimulation(fileName: String): Simulation? {
         val dir = File(context.filesDir, SAVE_DIR)
         val file = File(dir, fileName)
-        if (!file.exists()) return null
-        val snapshot: SimulationSnapshot = json.decodeFromString(file.readText())
-        return snapshot.toSimulation()
+        Log.d("SaveManager", "Попытка загрузить сохранение: $fileName из ${file.absolutePath}")
+        if (!file.exists()) {
+            Log.e("SaveManager", "Файл сохранения не найден: $fileName")
+            return null
+        }
+        return try {
+            val snapshot: SimulationSnapshot = json.decodeFromString(file.readText())
+            Log.d("SaveManager", "Сохранение успешно десериализовано: $fileName")
+            snapshot.toSimulation()
+        } catch (e: Exception) {
+            Log.e("SaveManager", "Ошибка при загрузке сохранения $fileName: ${e.message}", e)
+            null
+        }
     }
 
     fun deleteSave(fileName: String): Boolean {
@@ -139,6 +154,26 @@ class SaveManager @Inject constructor(
             metabolism = median(list.map { it.genome.metabolism }),
             digestionEfficiency = median(list.map { it.genome.digestionEfficiency }),
             maxAge = median(list.map { it.genome.maxAge })
+        )
+    }
+
+    private fun calculateMinGenome(list: List<OrganismSnapshot>): Genome {
+        if (list.isEmpty()) return Genome(0, 0, 0, 0)
+        return Genome(
+            speed = list.minOf { it.genome.speed },
+            metabolism = list.minOf { it.genome.metabolism },
+            digestionEfficiency = list.minOf { it.genome.digestionEfficiency },
+            maxAge = list.minOf { it.genome.maxAge }
+        )
+    }
+
+    private fun calculateMaxGenome(list: List<OrganismSnapshot>): Genome {
+        if (list.isEmpty()) return Genome(0, 0, 0, 0)
+        return Genome(
+            speed = list.maxOf { it.genome.speed },
+            metabolism = list.maxOf { it.genome.metabolism },
+            digestionEfficiency = list.maxOf { it.genome.digestionEfficiency },
+            maxAge = list.maxOf { it.genome.maxAge }
         )
     }
 } 

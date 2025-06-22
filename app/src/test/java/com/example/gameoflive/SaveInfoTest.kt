@@ -16,6 +16,8 @@ class SaveInfoTest {
             tickCounter = 100,
             organismCount = 50,
             medianGenome = Genome(speed = 5, metabolism = 3, digestionEfficiency = 7, maxAge = 100),
+            minGenome = Genome(speed = 1, metabolism = 1, digestionEfficiency = 1, maxAge = 50),
+            maxGenome = Genome(speed = 10, metabolism = 10, digestionEfficiency = 10, maxAge = 200),
             saveDate = 1704110400000L // 1 января 2024, 12:00 UTC
         )
         
@@ -37,6 +39,8 @@ class SaveInfoTest {
             tickCounter = 100,
             organismCount = 50,
             medianGenome = Genome(speed = 5, metabolism = 3, digestionEfficiency = 7, maxAge = 100),
+            minGenome = Genome(speed = 1, metabolism = 1, digestionEfficiency = 1, maxAge = 50),
+            maxGenome = Genome(speed = 10, metabolism = 10, digestionEfficiency = 10, maxAge = 200),
             saveDate = System.currentTimeMillis()
         )
         
@@ -45,6 +49,8 @@ class SaveInfoTest {
         assertEquals(100L, saveInfo.tickCounter)
         assertEquals(50, saveInfo.organismCount)
         assertEquals(5, saveInfo.medianGenome.speed)
+        assertEquals(1, saveInfo.minGenome.speed)
+        assertEquals(10, saveInfo.maxGenome.speed)
         assertTrue("saveDate должен быть положительным числом", saveInfo.saveDate > 0)
     }
 } 
