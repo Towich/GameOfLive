@@ -2,16 +2,21 @@ package com.example.gameoflive.save
 
 import android.content.Context
 import com.example.gameoflive.model.*
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import java.io.File
 
-object SaveManager {
-    private const val SAVE_DIR = "saves"
-    private const val EXT = ".json"
-
+@Singleton
+class SaveManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    private val SAVE_DIR = "saves"
+    private val EXT = ".json"
     private val json = Json { prettyPrint = true }
 
     /** Информация для отображения списка сохранений */
@@ -23,7 +28,7 @@ object SaveManager {
         val medianGenome: Genome
     )
 
-    fun saveSimulation(context: Context, name: String, simulation: Simulation) {
+    fun saveSimulation(name: String, simulation: Simulation) {
         val snapshot = SimulationSnapshot.fromSimulation(name, simulation)
         val dir = File(context.filesDir, SAVE_DIR)
         if (!dir.exists()) dir.mkdirs()
@@ -31,7 +36,7 @@ object SaveManager {
         file.writeText(json.encodeToString(snapshot))
     }
 
-    fun listSaves(context: Context): List<SaveInfo> {
+    fun listSaves(): List<SaveInfo> {
         val dir = File(context.filesDir, SAVE_DIR)
         if (!dir.exists()) return emptyList()
         return dir.listFiles { f -> f.extension == "json" }?.mapNotNull { file ->
@@ -49,7 +54,7 @@ object SaveManager {
         } ?: emptyList()
     }
 
-    fun loadSimulation(context: Context, fileName: String): Simulation? {
+    fun loadSimulation(fileName: String): Simulation? {
         val dir = File(context.filesDir, SAVE_DIR)
         val file = File(dir, fileName)
         if (!file.exists()) return null
@@ -57,7 +62,7 @@ object SaveManager {
         return snapshot.toSimulation()
     }
 
-    fun deleteSave(context: Context, fileName: String): Boolean {
+    fun deleteSave(fileName: String): Boolean {
         val dir = File(context.filesDir, SAVE_DIR)
         val file = File(dir, fileName)
         return file.exists() && file.delete()

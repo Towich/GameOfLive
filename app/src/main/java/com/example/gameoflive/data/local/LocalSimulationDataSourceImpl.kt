@@ -1,31 +1,29 @@
 package com.example.gameoflive.data.local
 
-import android.content.Context
 import com.example.gameoflive.domain.model.SaveInfo
 import com.example.gameoflive.model.Simulation
 import com.example.gameoflive.save.SaveManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 /**
- * Обёртка над существующим [SaveManager]. В дальнейшем код SaveManager можно перенести напрямую,
- * но пока так проще не ломать существующий UI.
+ * Обёртка над SaveManager, теперь SaveManager внедряется через DI.
  */
-class LocalSimulationDataSourceImpl(
-    private val context: Context
+class LocalSimulationDataSourceImpl @Inject constructor(
+    private val saveManager: SaveManager
 ) : LocalSimulationDataSource {
 
     override suspend fun save(name: String, simulation: Simulation) = withContext(Dispatchers.IO) {
-        SaveManager.saveSimulation(context, name, simulation)
+        saveManager.saveSimulation(name, simulation)
     }
 
     override suspend fun load(fileName: String): Simulation? = withContext(Dispatchers.IO) {
-        SaveManager.loadSimulation(context, fileName)
+        saveManager.loadSimulation(fileName)
     }
 
     override suspend fun list(): List<SaveInfo> = withContext(Dispatchers.IO) {
-        // преобразуем в доменные модели
-        SaveManager.listSaves(context).map {
+        saveManager.listSaves().map {
             SaveInfo(
                 fileName = it.fileName,
                 name = it.name,
@@ -37,6 +35,6 @@ class LocalSimulationDataSourceImpl(
     }
 
     override suspend fun delete(fileName: String): Boolean = withContext(Dispatchers.IO) {
-        SaveManager.deleteSave(context, fileName)
+        saveManager.deleteSave(fileName)
     }
 } 

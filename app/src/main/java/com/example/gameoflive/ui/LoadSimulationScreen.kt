@@ -11,30 +11,34 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.example.gameoflive.save.SaveManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.setValue
+import com.example.gameoflive.presentation.game.LoadSimulationViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.gameoflive.domain.model.SaveInfo
 
 @Composable
-fun LoadSimulationScreen(onBack: () -> Unit, onSelect: (String) -> Unit) {
-    val context = LocalContext.current
-    val saves = remember { mutableStateListOf<SaveManager.SaveInfo>().apply { addAll(SaveManager.listSaves(context)) } }
-    var confirmDelete by remember { mutableStateOf<SaveManager.SaveInfo?>(null) }
+fun LoadSimulationScreen(
+    onBack: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    val viewModel: LoadSimulationViewModel = hiltViewModel()
+    val saves by viewModel.saves.collectAsState()
+    var confirmDelete by remember { mutableStateOf<SaveInfo?>(null) }
+
+    // Загружаем список при первом запуске
+    LaunchedEffect(Unit) {
+        viewModel.loadSaves()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -87,7 +91,7 @@ fun LoadSimulationScreen(onBack: () -> Unit, onSelect: (String) -> Unit) {
                 .align(Alignment.BottomStart)
                 .padding(16.dp)
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
         }
 
         // Диалог подтверждения удаления
@@ -98,9 +102,9 @@ fun LoadSimulationScreen(onBack: () -> Unit, onSelect: (String) -> Unit) {
                 text = { Text("Вы уверены, что хотите удалить \"${toDel.name}\"?") },
                 confirmButton = {
                     androidx.compose.material3.Button(onClick = {
-                        SaveManager.deleteSave(context, toDel.fileName)
-                        saves.remove(toDel)
-                        confirmDelete = null
+                        viewModel.deleteSave(toDel.fileName) { success ->
+                            if (success) confirmDelete = null
+                        }
                     }) { Text("Удалить") }
                 },
                 dismissButton = {

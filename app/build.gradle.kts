@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
+    id("com.google.dagger.hilt.android") version "2.46.1"
+    id("kotlin-kapt")
 }
 
 android {
@@ -48,6 +50,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    
+    hilt {
+        enableAggregatingTask = false
+    }
 }
 
 dependencies {
@@ -75,4 +81,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Hilt
+    implementation("com.google.dagger:hilt-android:2.46.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.46.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    // implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 }

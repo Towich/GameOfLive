@@ -4,7 +4,6 @@ import com.example.gameoflive.data.local.LocalSimulationDataSource
 import com.example.gameoflive.data.remote.RemoteSimulationDataSource
 import com.example.gameoflive.domain.model.SaveInfo
 import com.example.gameoflive.model.Simulation
-import com.example.gameoflive.model.copyDeep
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

@@ -9,5 +9,6 @@ data class GameState(
     val selectedOrganism: Organism? = null,
     val isSaving: Boolean = false,
     val showSaveDialog: Boolean = false,
+    val showExitDialog: Boolean = false,
     val error: String? = null
 ) 

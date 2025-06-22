@@ -53,9 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gameoflive.GameConfig
-import com.example.gameoflive.data.local.LocalSimulationDataSourceImpl
-import com.example.gameoflive.data.remote.RemoteSimulationDataSourceStub
-import com.example.gameoflive.data.repository.SimulationRepositoryImpl
 import com.example.gameoflive.model.Organism
 import com.example.gameoflive.model.Position
 import com.example.gameoflive.model.Sex
@@ -66,56 +63,49 @@ import com.example.gameoflive.presentation.game.GameState
 import com.example.gameoflive.presentation.game.GameViewModel
 import androidx.activity.compose.BackHandler
 import kotlin.random.Random
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun GameScreen(
-    initialSimulation: Simulation? = null,
+    saveFileName: String? = null,
     onBackToMenu: () -> Unit = {}
 ) {
-    val context = LocalContext.current
+    // Используем Hilt для ViewModel
+    val viewModel: GameViewModel = hiltViewModel()
     
-    // Создаём зависимости для ViewModel
-    val localDataSource = remember { LocalSimulationDataSourceImpl(context) }
-    val remoteDataSource = remember { RemoteSimulationDataSourceStub() }
-    val repository = remember { SimulationRepositoryImpl(localDataSource, remoteDataSource) }
-    
-    // Создаём симуляцию с первым организмом, если нужно
-    val simulation = remember {
-        initialSimulation ?: Simulation(
-            width = GameConfig.FIELD_WIDTH,
-            height = GameConfig.FIELD_HEIGHT
-        ).apply {
-            if (organisms.isEmpty()) {
-                spawnOrganism(
-                    genome = GameConfig.randomGenome(),
-                    position = Position(width / 2, height / 2),
-                    random = Random
-                )
+    // Загружаем симуляцию, если указано имя файла
+    LaunchedEffect(saveFileName) {
+        if (saveFileName != null) {
+            viewModel.loadSimulation(saveFileName)
+        } else {
+            // Создаём новую симуляцию
+            val newSimulation = Simulation(
+                width = GameConfig.FIELD_WIDTH,
+                height = GameConfig.FIELD_HEIGHT
+            ).apply {
+                if (organisms.isEmpty()) {
+                    spawnOrganism(
+                        genome = GameConfig.randomGenome(),
+                        position = Position(width / 2, height / 2),
+                        random = Random
+                    )
+                }
             }
+            viewModel.initialize(newSimulation)
         }
     }
-    
-    // Создаём ViewModel
-    val viewModel = remember { GameViewModel(repository, simulation) }
     
     // Подписываемся на состояние и эффекты
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Обрабатываем эффекты Snackbar
+    // Обрабатываем эффекты
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
-            if (effect is GameEffect.ShowSnackbar) {
-                snackbarHostState.showSnackbar(effect.message)
-            }
-        }
-    }
-    
-    // Обрабатываем эффекты навигации
-    LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
-            if (effect is GameEffect.NavigateBack) {
-                onBackToMenu()
+            when (effect) {
+                is GameEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is GameEffect.NavigateBack -> onBackToMenu()
             }
         }
     }
@@ -123,6 +113,21 @@ fun GameScreen(
     // Обрабатываем системную кнопку "Назад"
     BackHandler(enabled = true) {
         viewModel.dispatch(GameIntent.BackPressed)
+    }
+    
+    // Показываем диалог выхода, если нужно
+    if (state.showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelExit() },
+            title = { Text("Выйти из симуляции?") },
+            text = { Text("Все несохранённые изменения будут потеряны.") },
+            confirmButton = {
+                Button(onClick = { viewModel.confirmExit() }) { Text("Выйти") }
+            },
+            dismissButton = {
+                Button(onClick = { viewModel.cancelExit() }) { Text("Отмена") }
+            }
+        )
     }
     
     // UI
