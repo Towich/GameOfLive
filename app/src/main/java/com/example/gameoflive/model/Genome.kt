@@ -15,7 +15,8 @@ data class Genome(
     val metabolism: Int,          // энергия, затрачиваемая каждый тик на поддержание жизнедеятельности
     val digestionEfficiency: Int, // сколько энергии организм получает из одной еды
     val maxAge: Int,              // максимальный возраст организма в тиках
-    val perception: Int           // радиус, в котором организм может видеть еду и партнеров
+    val perception: Int,          // радиус, в котором организм может видеть еду и партнеров
+    val color: Long = 0xFF2196F3  // ARGB-цвет организма (по умолчанию синий)
 ) {
 
     companion object {
@@ -53,6 +54,7 @@ data class Genome(
                 if (random.nextBoolean()) mother.digestionEfficiency else father.digestionEfficiency
             var maxAge = if (random.nextBoolean()) mother.maxAge else father.maxAge
             var perception = if (random.nextBoolean()) mother.perception else father.perception
+            var color = if (random.nextBoolean()) mother.color else father.color
 
             // применяем мутации
             speed = mutateValue(speed, random, 1)
@@ -60,10 +62,31 @@ data class Genome(
             digestionEfficiency = mutateValue(digestionEfficiency, random, 1)
             maxAge = mutateValue(maxAge, random, 50)
             perception = mutateValue(perception, random, 1)
+            color = mutateColor(color, random)
 
-            val child = Genome(speed, metabolism, digestionEfficiency, maxAge, perception)
+            val child = Genome(speed, metabolism, digestionEfficiency, maxAge, perception, color)
             // Log.d("Genome", "Inherit => mother=$mother father=$father child=$child")
             return child
+        }
+
+        /**
+         * Незначительная мутация цвета. Каждый из каналов RGB может измениться на небольшую величину.
+         */
+        private fun mutateColor(baseColor: Long, random: Random): Long {
+            if (random.nextInt(100) >= GameConfig.MUTATION_CHANCE) return baseColor
+
+            // Извлекаем каналы
+            var r = ((baseColor shr 16) and 0xFF).toInt()
+            var g = ((baseColor shr 8) and 0xFF).toInt()
+            var b = (baseColor and 0xFF).toInt()
+
+            // Небольшое изменение в диапазоне [-10; 10]
+            val deltaRange = -10..10
+            r = (r + random.nextInt(deltaRange.first, deltaRange.last + 1)).coerceIn(0, 255)
+            g = (g + random.nextInt(deltaRange.first, deltaRange.last + 1)).coerceIn(0, 255)
+            b = (b + random.nextInt(deltaRange.first, deltaRange.last + 1)).coerceIn(0, 255)
+
+            return 0xFF000000L or ((r shl 16) + (g shl 8) + b).toLong()
         }
     }
 } 

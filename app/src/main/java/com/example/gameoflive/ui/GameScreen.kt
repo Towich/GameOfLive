@@ -412,17 +412,14 @@ private fun GameGridView(
                 // Еда
                 simulation.food.forEach { foodPos ->
                     drawRect(
-                        color = Color(0xFF26D0CE),
+                        color = Color(0xFFEEEEEE),
                         topLeft = Offset(foodPos.x * cellSizePx, foodPos.y * cellSizePx),
                         size = Size(cellSizePx, cellSizePx)
                     )
                 }
                 // Организмы
                 simulation.organisms.forEach { org ->
-                    val color = when (org.sex) {
-                        Sex.MALE -> Color(0xFF2196F3) // Яркий синий для самцов
-                        Sex.FEMALE -> Color(0xFFE91E63) // Яркий розовый для самок
-                    }
+                    val color = Color(org.genome.color)
                     drawRect(
                         color = color,
                         topLeft = Offset(org.position.x * cellSizePx, org.position.y * cellSizePx),
@@ -575,10 +572,7 @@ private fun OrganismsList(organisms: List<Organism>) {
                 .padding(8.dp)
         ) {
             items(organisms) { org ->
-                val sexColor = when (org.sex) {
-                    Sex.MALE -> Color(0xFF2196F3) // Яркий синий для самцов
-                    Sex.FEMALE -> Color(0xFFE91E63) // Яркий розовый для самок
-                }
+                val sexColor = Color(org.genome.color)
                 Text(
                     text = "#${org.id} (${if (org.sex == Sex.MALE) "M" else "F"}) E:${org.energy} A:${org.age}",
                     fontSize = 12.sp,

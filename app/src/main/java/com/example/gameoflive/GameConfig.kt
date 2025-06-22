@@ -43,6 +43,7 @@ object GameConfig {
         metabolism = random.nextInt(GENOME_METABOLISM_MIN, GENOME_METABOLISM_MAX),
         digestionEfficiency = random.nextInt(GENOME_DIGESTION_MIN, GENOME_DIGESTION_MAX),
         maxAge = random.nextInt(GENOME_MAX_AGE_MIN, GENOME_MAX_AGE_MAX),
-        perception = random.nextInt(GENOME_PERCEPTION_MIN, GENOME_PERCEPTION_MAX)
+        perception = random.nextInt(GENOME_PERCEPTION_MIN, GENOME_PERCEPTION_MAX),
+        color = 0xFF000000L or random.nextInt(0x00FFFFFF).toLong()
     )
 } 
